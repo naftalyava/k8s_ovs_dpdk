@@ -33,15 +33,15 @@ sudo apt-get install meson python3-pyelftools python-pyelftools libz-dev libpcap
 DPDK Install
 ------------
 
-git clone http://dpdk.org/git/dpdk
-cd dpdk
-meson build
-ninja -C build
-sudo ninja -C build install
-sudo ldconfig
-export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig/
-// if version is printed all is ok
-pkg-config --modversion libdpdk
+git clone http://dpdk.org/git/dpdk \
+cd dpdk \
+meson build \
+ninja -C build \
+sudo ninja -C build install \
+sudo ldconfig \
+export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig/ \
+// if version is printed all is ok \
+pkg-config --modversion libdpdk \
 
 
 

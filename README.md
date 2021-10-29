@@ -9,6 +9,7 @@ VM3 [running on VM0] - K8s Worker1
 
 
 Milestones:
+-----------
 0. Install and configure VM0 with OVS-DPDK and KVM []
 1. Figure out vhostuser
 1. Install and configure VM1, enable east-west [over OVS] and north-south [over OVS?] traffic []
@@ -39,7 +40,7 @@ ninja -C build
 sudo ninja -C build install
 sudo ldconfig
 export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig/
-# if version is printed all is ok
+// if version is printed all is ok
 pkg-config --modversion libdpdk
 
 
@@ -47,27 +48,27 @@ pkg-config --modversion libdpdk
 
 OVS-DPDK install
 ----------------
-# was unable to install from sources
+// was unable to install from sources
 
 sudo apt-get install openvswitch-switch-dpdk
 sudo update-alternatives --set ovs-vswitchd /usr/lib/openvswitch-switch-dpdk/ovs-vswitchd-dpdk
 sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-init=true"
 
-# run on core 0 only
+// run on core 0 only
 sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-lcore-mask=0x1"
 
-# run time allocation of huge pages where N = No. of 2M huge pages
+// run time allocation of huge pages where N = No. of 2M huge pages
 sysctl -w vm.nr_hugepages=N
 
-# verify hugepage configuration
+// verify hugepage configuration
 grep HugePages_ /proc/meminfo
 
-# mount the hugepages
+// mount the hugepages
 sudo su -
 mount -t hugetlbfs none /dev/hugepages``
 
-# limit to one whitelisted device
+// limit to one whitelisted device
 sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-extra=--pci-whitelist=0000:04:00.0"
 
-# restart ovs
+// restart ovs
 sudo service openvswitch-switch restart

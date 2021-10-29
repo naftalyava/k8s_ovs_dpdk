@@ -10,6 +10,7 @@ VM3 [running on VM0] - K8s Worker1
 
 Milestones:
 -----------
+
 0. Install and configure VM0 with OVS-DPDK and KVM []
 1. Figure out vhostuser
 1. Install and configure VM1, enable east-west [over OVS] and north-south [over OVS?] traffic []
@@ -17,9 +18,6 @@ Milestones:
 3. Install and configure VM3, enable east-west [over OVS] and north-south [over OVS?] traffic []
 4. At this point we have running k8s cluster VM1, VM2 and VM3 connected with OVS-DPDK on VM0  []
 5. TODO
-
-
-
 
 
 Notes:
@@ -41,18 +39,19 @@ sudo ninja -C build install \
 sudo ldconfig \
 export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig/ \
 // if version is printed all is ok \
-pkg-config --modversion libdpdk \
+pkg-config --modversion libdpdk
 
 
 
 
 OVS-DPDK install
 ----------------
+
 // was unable to install from sources
 
 sudo apt-get install openvswitch-switch-dpdk \
 sudo update-alternatives --set ovs-vswitchd /usr/lib/openvswitch-switch-dpdk/ovs-vswitchd-dpdk \
-sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-init=true" \
+sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-init=true"
 
 // run on core 0 only \
 sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-lcore-mask=0x1"
@@ -72,3 +71,11 @@ sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-extra=--pci-whitelist=0000:
 
 // restart ovs \
 sudo service openvswitch-switch restart
+
+
+
+Network Configuration
+---------------------
+
+ovs-vsctl add-br ovsdpdkbr -- set bridge ovsdpdkbr datapath_type=netdev \
+ovs-vsctl add-port ovsdpdkbr vhost-user-0 -- set Interface vhost-user-0 type=dpdkvhostuserclient "options:vhost-server-path=/var/run/vhostuserclient/vhost-user-client-0"

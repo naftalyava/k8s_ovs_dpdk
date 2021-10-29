@@ -57,7 +57,7 @@ sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-init=true"
 sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-lcore-mask=0x1"
 
 // run time allocation of huge pages where N = No. of 2M huge pages \
-sysctl -w vm.nr_hugepages=N
+sysctl -w vm.nr_hugepages=2048
 
 // verify hugepage configuration \
 grep HugePages_ /proc/meminfo
@@ -77,5 +77,31 @@ sudo service openvswitch-switch restart
 Network Configuration
 ---------------------
 
-ovs-vsctl add-br ovsdpdkbr -- set bridge ovsdpdkbr datapath_type=netdev \
-ovs-vsctl add-port ovsdpdkbr vhost-user-0 -- set Interface vhost-user-0 type=dpdkvhostuserclient "options:vhost-server-path=/var/run/vhostuserclient/vhost-user-client-0"
+
+<interface type='vhostuser'>
+<source type='unix'
+path='/tmp/vhost-user-client-k8sworker0'
+mode='server'/>
+<model type='virtio'/>
+</interface>
+
+<interface type='vhostuser'>
+<source type='unix'
+path='/tmp/vhost-user-client-k8sworker1'
+mode='server'/>
+<model type='virtio'/>
+</interface>
+
+// configure east-west k8s data plane
+sudo ovs-vsctl add-br east_west_dp_dpdk
+ovs-vsctl add-port east_west_dp_dpdk vhost-user-k8sworker0 -- set Interface vhost-user-k8sworker0 type=dpdkvhostuserclient "options:vhost-server-path=/tmp/vhost-user-client-k8sworker0"
+ovs-vsctl add-port east_west_dp_dpdk vhost-user-k8sworker1 -- set Interface vhost-user-k8sworker1 type=dpdkvhostuserclient "options:vhost-server-path=/tmp/vhost-user-client-k8sworker1"
+
+// configure east-west k8s control plane
+ip tuntap add mode tap k8sworker0_cp
+ip tuntap add mode tap k8sworker1_cp
+ifconfig k8sworker0_cp up
+ifconfig k8sworker1_cp up
+ovs-vsctl add-br east_west_cp
+ovs-vsctl add-port east_west_cp k8sworker0_cp
+ovs-vsctl add-port east_west_cp k8sworker1_cp

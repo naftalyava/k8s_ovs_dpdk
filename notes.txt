@@ -32,11 +32,15 @@ sudo apt-get install openvswitch-switch-dpdk
 sudo update-alternatives --set ovs-vswitchd /usr/lib/openvswitch-switch-dpdk/ovs-vswitchd-dpdk
 sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-init=true"
 
+
 // run on core 0 only
 sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-lcore-mask=0x1"
 
+// enable vhost-iommu
+sudo ovs-vsctl set Open_vSwitch . other_config:vhost-iommu-support=true
+
 // run time allocation of huge pages where N = No. of 2M huge pages
-sudo sysctl -w vm.nr_hugepages=2048
+sudo sysctl -w vm.nr_hugepages=20480
 
 // verify hugepage configuration
 grep HugePages_ /proc/meminfo

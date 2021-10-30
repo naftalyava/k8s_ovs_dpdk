@@ -104,7 +104,7 @@ scratch:
 
 
 sudo apt-get install meson python3-pyelftools python-pyelftools libz-dev libpcap-dev libnuma-dev libssl-dev autoconf libtool libdbus-1-dev git
-
+sudo apt-get install dpdk-dev libdpdk-dev
 
 
 DPDK Install

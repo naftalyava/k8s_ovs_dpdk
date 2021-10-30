@@ -76,6 +76,10 @@ sudo ovs-vsctl add-br east_west_dp -- set bridge east_west_dp datapath_type=netd
 sudo ovs-vsctl add-port east_west_dp vhost-user-k8sworker0 -- set Interface vhost-user-k8sworker0 type=dpdkvhostuserclient "options:vhost-server-path=/tmp/vhost-user-client-k8sworker0"
 sudo ovs-vsctl add-port east_west_dp vhost-user-k8sworker1 -- set Interface vhost-user-k8sworker1 type=dpdkvhostuserclient "options:vhost-server-path=/tmp/vhost-user-client-k8sworker1"
 
+sudo ovs-ofctl del-flows east_west_dp
+sudo ovs-ofctl add-flow east_west_dp in_port=1,actions=output:2
+sudo ovs-ofctl add-flow east_west_dp in_port=2,actions=output:1
+
 
 
 

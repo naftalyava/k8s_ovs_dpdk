@@ -184,8 +184,9 @@ sudo ovs-vsctl add-port north_south vport2
 Inside guest os:
 sudo su -
 echo 1 > /sys/module/vfio/parameters/enable_unsafe_noiommu_mode
+sudo modprobe uio_pci_generic
 sudo dpdk-devbind.py --status 
-sudo dpdk-devbind.py -bind=vfio-pci 0000:07:00.0
+sudo dpdk-devbind.py -b uio_pci_generic 0000:02:00.0
 
 trying uio:
 sysctl vm.nr_hugepages=1024

@@ -40,7 +40,7 @@ sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-lcore-mask=0x1"
 sudo ovs-vsctl set Open_vSwitch . other_config:vhost-iommu-support=true
 
 // run time allocation of huge pages where N = No. of 2M huge pages
-sudo sysctl -w vm.nr_hugepages=20480
+sudo sysctl -w vm.nr_hugepages=2048
 
 // verify hugepage configuration
 grep HugePages_ /proc/meminfo
@@ -57,10 +57,9 @@ sudo service openvswitch-switch restart
 
 
 
-Network Configuration
----------------------
 
-
+// Configuration of Guest interfaces 
+// mode: host is client 
 <interface type='vhostuser'>
 <source type='unix'
 path='/tmp/vhost-user-client-k8sworker0'
@@ -68,29 +67,53 @@ mode='server'/>
 <model type='virtio'/>
 </interface>
 
-<interface type='vhostuser'>
-<source type='unix'
-path='/tmp/vhost-user-client-k8sworker1'
-mode='server'/>
-<model type='virtio'/>
+// mode: host is server
+<interface type="vhostuser">
+  <mac address="56:48:4f:53:54:01"/>
+  <source type="unix" path="/var/run/openvswitch/vhost-user-1" mode="client"/>
+  <target dev="vhost-user-1"/>
+  <model type="virtio"/>
+  <driver name="vhost" rx_queue_size="256"/>
+  <alias name="net1"/>
+  <address type="pci" domain="0x0000" bus="0x02" slot="0x00" function="0x0"/>
 </interface>
 
-// configure east-west k8s data plane
+
+// connect guest to OVS with tap ports
+<interface type="bridge">
+  <mac address="52:54:00:71:b1:b6"/>
+  <source bridge="north_south"/>
+  <virtualport type="openvswitch">
+    <parameters interfaceid="36cf8691-9674-435f-87d8-7e1b8e5eef18"/>
+  </virtualport>
+  <target dev="vport1"/>
+  <model type="rtl8139"/>
+  <alias name="net0"/>
+  <address type="pci" domain="0x0000" bus="0x01" slot="0x00" function="0x0"/>
+</interface>
+
+
+Network Configuration
+---------------------
+
+// configure east-west k8s data plane - vhost-user-client
 sudo ovs-vsctl add-br east_west_dp -- set bridge east_west_dp datapath_type=netdev
 sudo ovs-vsctl add-port east_west_dp vhost-user-k8sworker0 -- set Interface vhost-user-k8sworker0 type=dpdkvhostuserclient "options:vhost-server-path=/tmp/vhost-user-client-k8sworker0"
 sudo ovs-vsctl add-port east_west_dp vhost-user-k8sworker1 -- set Interface vhost-user-k8sworker1 type=dpdkvhostuserclient "options:vhost-server-path=/tmp/vhost-user-client-k8sworker1"
 
+
+// configure east-west k8s data plane - vhost-user
+sudo ovs-vsctl add-port east_west_dp vhost-user-1 --  set Interface vhost-user-1 type=dpdkvhostuser
+sudo ovs-vsctl add-port east_west_dp vhost-user-2 --  set Interface vhost-user-2 type=dpdkvhostuser
+
+
+
+
+
+//ovs-vsctl -- --columns=name,ofport list Interface
 sudo ovs-ofctl del-flows east_west_dp
 sudo ovs-ofctl add-flow east_west_dp in_port=1,actions=output:2
 sudo ovs-ofctl add-flow east_west_dp in_port=2,actions=output:1
-
-
-
-
-
-
-
-
 
 
 
@@ -119,7 +142,7 @@ cd dpdk
 meson build
 ninja -C build
 sudo ninja -C build install
-sudo ldconfig \
+sudo ldconfig
 export PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig/
 // if version is printed all is ok
 pkg-config --modversion libdpdk
@@ -141,3 +164,34 @@ sudo ifconfig k8sworker1_cp up
 sudo ovs-vsctl add-br east_west_cp
 sudo ovs-vsctl add-port east_west_cp k8sworker0_cp
 sudo ovs-vsctl add-port east_west_cp k8sworker1_cp
+
+
+
+// configure north-south
+
+
+sudo ip tuntap add mode tap vport1
+sudo ip tuntap add mode tap vport2
+sudo ifconfig vport1 up
+sudo ifconfig vport2 up
+sudo ovs-vsctl add-br north_south
+sudo ovs-vsctl add-port north_south vport1
+sudo ovs-vsctl add-port north_south vport2
+
+
+
+
+Inside guest os:
+sudo su -
+echo 1 > /sys/module/vfio/parameters/enable_unsafe_noiommu_mode
+sudo dpdk-devbind.py --status 
+sudo dpdk-devbind.py -bind=vfio-pci 0000:07:00.0
+
+trying uio:
+sysctl vm.nr_hugepages=1024
+mkdir -p /dev/hugepages
+mount -t hugetlbfs hugetlbfs /dev/hugepages  # only if not already mounted
+modprobe uio
+insmod $DPDK_BUILD/kmod/igb_uio.ko
+$DPDK_DIR/usertools/dpdk-devbind.py --status
+$DPDK_DIR/usertools/dpdk-devbind.py -b igb_uio 00:03.0 00:04.0

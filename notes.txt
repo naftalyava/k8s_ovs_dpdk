@@ -40,7 +40,7 @@ sudo ovs-vsctl set Open_vSwitch . "other_config:dpdk-lcore-mask=0x1"
 sudo ovs-vsctl set Open_vSwitch . other_config:vhost-iommu-support=true
 
 // run time allocation of huge pages where N = No. of 2M huge pages
-sudo sysctl -w vm.nr_hugepages=2048
+sudo sysctl -w vm.nr_hugepages=6144
 
 // verify hugepage configuration
 grep HugePages_ /proc/meminfo

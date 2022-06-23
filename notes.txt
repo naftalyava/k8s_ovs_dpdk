@@ -196,3 +196,46 @@ modprobe uio
 insmod $DPDK_BUILD/kmod/igb_uio.ko
 $DPDK_DIR/usertools/dpdk-devbind.py --status
 $DPDK_DIR/usertools/dpdk-devbind.py -b igb_uio 00:03.0 00:04.0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+installing k8s
+
+
+
+sudo su -
+
+ufw disable
+
+swapoff -a; sed -i '/swap/d' /etc/fstab
+
+
+cat >>/etc/sysctl.d/kubernetes.conf<<EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sysctl --system
+
+sudo apt update
+sudo apt install -y apt-transport-https ca-certificates curl
+sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+
+
+
